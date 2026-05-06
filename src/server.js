@@ -22,7 +22,8 @@ app.use(cors({
   origin: "*",
   // credentials: true // credentials cannot be true when origin is *
 }))
-app.use(express.json())
+app.use(express.json({ limit: "100mb" }))
+app.use(express.urlencoded({ limit: "100mb", extended: true }))
 
 app.use("/import", importRoutes)
 app.use("/blogs", blogRoutes)
@@ -45,7 +46,7 @@ const port = process.env.PORT || 3000
 connectToDatabase()
   .then(() => {
     app.listen(port, () => {
-      process.stdout.write(`Server listening on port ${port}\n`)
+      process.stdout.write(`Server listening on port ${port} (Body limit: 100MB)\n`)
     })
   })
   .catch(error => {
