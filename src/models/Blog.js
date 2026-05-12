@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const blogSchema = new mongoose.Schema(
   {
@@ -11,13 +11,13 @@ const blogSchema = new mongoose.Schema(
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     slug: {
       type: String,
-      index: true
+      index: true,
     },
     author: { type: mongoose.Schema.Types.ObjectId, ref: "SystemUser" },
     status: {
       type: String,
       enum: ["DRAFT", "APPROVED"],
-      default: "DRAFT"
+      default: "DRAFT",
     },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "SystemUser" },
     approvedOn: Date,
@@ -28,13 +28,44 @@ const blogSchema = new mongoose.Schema(
     authorName: String,
     schemaMarkup: String,
     faqs: [{ type: mongoose.Schema.Types.ObjectId, ref: "BlogFaq" }],
-    sections: [{ type: mongoose.Schema.Types.ObjectId, ref: "BlogSection" }]
+    sections: [{ type: mongoose.Schema.Types.ObjectId, ref: "BlogSection" }],
+    createdBy: String,
+    deletedBy: String,
+    updatedBy: String,
+    deletedAt: String,
+    metaTitle: {
+      type: String,
+      default: null,
+    },
+
+    canonicalUrl: {
+      type: String,
+      default: null,
+    },
+    updatedDate: {
+      type: Date,
+      default: null,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    metaRobotsIndex: {
+      type: String,
+      enum: ["index", "noindex"],
+      default: "index",
+    },
+    metaRobotsFollow: {
+      type: String,
+      enum: ["follow", "nofollow"],
+      default: "follow",
+    },
   },
   {
-    timestamps: true
-  }
-)
+    timestamps: true,
+  },
+);
 
-const Blog = mongoose.model("Blog", blogSchema)
+const Blog = mongoose.model("Blog", blogSchema);
 
-module.exports = Blog
+module.exports = Blog;
