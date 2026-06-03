@@ -3,6 +3,199 @@ const Blog = require("../models/Blog")
 const WebPage = require("../models/WebPage")
 const Location = require("../models/Location")
 
+const slugify = (text) => {
+  if (!text) return "";
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w\-]+/g, "") // Remove all non-word chars
+    .replace(/\-\-+/g, "-") // Replace multiple - with single -
+    .replace(/^-+/, "") // Trim - from start
+    .replace(/-+$/, "") // Trim - from end
+}
+
+const generateSchema = (page) => {
+  const course = page.categoryId?.name || ""
+  const location = page.locationId?.name || ""
+  const courseSlug = page.categoryId?.slug || slugify(course)
+  const locationSlug = page.locationId ? slugify(page.locationId.name) : ""
+
+  const replacePlaceholders = (val) => {
+    if (typeof val === "string") {
+      return val
+        .replace(/\[course\]/gi, course)
+        .replace(/\[location\]/gi, location)
+        .replace(/\[course-slug\]/gi, courseSlug)
+        .replace(/\[location-slug\]/gi, locationSlug)
+    } else if (Array.isArray(val)) {
+      return val.map(replacePlaceholders)
+    } else if (typeof val === "object" && val !== null) {
+      const obj = {}
+      for (const key in val) {
+        obj[key] = replacePlaceholders(val[key])
+      }
+      return obj
+    }
+    return val
+  }
+
+  const schemaTemplate = [
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "NorthStar Academy",
+      "url": "https://northstaracad.com",
+      "logo": "https://northstaracad.com/logo.png",
+      "description": "NorthStar Academy offers the best [course] coaching in [location] with expert faculty, structured batches, and proven results.",
+      "areaServed": {
+        "@type": "City",
+        "name": "[location]"
+      },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "[course] Coaching Programs",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Course",
+              "name": "[course] Foundation Batch in [location]",
+              "description": "Foundation level [course] preparation for students in [location]",
+              "provider": {
+                "@type": "Organization",
+                "name": "NorthStar Academy"
+              }
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Course",
+              "name": "[course] Intensive Batch in [location]",
+              "description": "Intensive [course] crash course for [location] students",
+              "provider": {
+                "@type": "Organization",
+                "name": "NorthStar Academy"
+              }
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Course",
+              "name": "[course] Online Batch for [location]",
+              "description": "Live online [course] classes for students in [location]",
+              "provider": {
+                "@type": "Organization",
+                "name": "NorthStar Academy"
+              }
+            }
+          }
+        ]
+      },
+      "sameAs": [
+        "https://www.facebook.com/northstaracademy",
+        "https://www.instagram.com/northstaracademy",
+        "https://www.youtube.com/@northstaracademy"
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://northstaracad.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "[course] Coaching",
+          "item": "https://northstaracad.com/[course-slug]-coaching"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "[course] Coaching in [location]",
+          "item": "https://northstaracad.com/best-[course-slug]-coaching-in-[location-slug]"
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is NorthStar Academy the best [course] coaching in [location]?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "NorthStar Academy is among the top-rated [course] coaching institutes in [location], known for expert faculty, structured batches, and consistent results. Students from [location] have achieved top ranks in [course] through our proven methodology."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What [course] batches are available in [location]?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "NorthStar Academy offers Foundation, Intensive, Repeater, and Online batches for [course] in [location]. Each batch is designed to suit different preparation stages and schedules for [location] students."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I enrol for [course] coaching in [location]?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You can enrol for [course] coaching in [location] by visiting our website, calling our [location] centre, or filling the enquiry form. Our counsellors will help you choose the right [course] batch based on your current preparation level."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does NorthStar Academy offer online [course] classes for [location] students?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. NorthStar Academy offers live online [course] classes that [location] students can attend from home. The online batch covers the full [course] syllabus with the same faculty and test series as the offline batches."
+          }
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Best [course] Coaching in [location] | NorthStar Academy",
+      "description": "Join NorthStar Academy for the best [course] coaching in [location]. Expert faculty, structured batches, and proven results.",
+      "url": "https://northstaracad.com/best-[course-slug]-coaching-in-[location-slug]",
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://northstaracad.com"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "[course] Coaching in [location]",
+            "item": "https://northstaracad.com/best-[course-slug]-coaching-in-[location-slug]"
+          }
+        ]
+      },
+      "speakable": {
+        "@type": "SpeakableSpecification",
+        "cssSelector": ["h1", "h2", ".page-intro"]
+      }
+    }
+  ]
+
+  return replacePlaceholders(schemaTemplate)
+}
+
 const router = express.Router()
 
 // GET /public/blogs - Fetch APPROVED blogs with pagination
@@ -65,7 +258,7 @@ router.get("/seo-page/:slug", async (req, res, next) => {
     const { slug } = req.params
 
     const page = await WebPage.findOne({ slug })
-      .populate("categoryId", "name")
+      .populate("categoryId", "name slug")
       .populate("locationId", "name")
       .lean()
 
@@ -73,7 +266,38 @@ router.get("/seo-page/:slug", async (req, res, next) => {
       return res.status(404).json({ error: "SEO page not found" })
     }
 
+    page.schema = generateSchema(page)
+
     res.json(page)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /public/sitemap-data - Fetch sitemap relevant data for generated landing pages
+router.get("/sitemap-data", async (req, res, next) => {
+  try {
+    const pages = await WebPage.find({ status: "generated" })
+      .populate("categoryId", "name slug")
+      .populate("locationId", "name")
+      .lean()
+
+    const sitemapData = pages.map(page => {
+      const course = page.categoryId?.name || ""
+      const courseSlug = page.categoryId?.slug || slugify(course)
+      const locationSlug = page.locationId ? slugify(page.locationId.name) : ""
+      
+      return {
+        slug: page.slug,
+        url: `https://northstaracad.com/best-${courseSlug}-coaching-in-${locationSlug}`,
+        createdAt: page.createdAt,
+        updatedAt: page.updatedAt,
+        priority: 0.8,
+        changefreq: "weekly"
+      }
+    })
+
+    res.json(sitemapData)
   } catch (error) {
     next(error)
   }

@@ -23,7 +23,8 @@ const webPageSchema = new mongoose.Schema(
       }
     ],
     slug: { type: String, required: true, unique: true },
-    status: { type: String, default: "generated" }
+    status: { type: String, default: "generated" },
+    schema: { type: mongoose.Schema.Types.Mixed }
   },
   {
     timestamps: true
