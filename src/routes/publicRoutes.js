@@ -1,5 +1,6 @@
 const express = require("express")
 const Blog = require("../models/Blog")
+const WebPage = require("../models/WebPage")
 
 const router = express.Router()
 
@@ -52,6 +53,26 @@ router.get("/blogs/:slug", async (req, res, next) => {
     }
 
     res.json(blog)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /public/seo-page/:slug - Fetch single generated landing page by slug
+router.get("/seo-page/:slug", async (req, res, next) => {
+  try {
+    const { slug } = req.params
+
+    const page = await WebPage.findOne({ slug })
+      .populate("categoryId", "name")
+      .populate("locationId", "name")
+      .lean()
+
+    if (!page) {
+      return res.status(404).json({ error: "SEO page not found" })
+    }
+
+    res.json(page)
   } catch (error) {
     next(error)
   }

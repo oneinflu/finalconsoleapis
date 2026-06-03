@@ -11,6 +11,8 @@ const dashboardRoutes = require("./routes/dashboardRoutes")
 const categoryRoutes = require("./routes/categoryRoutes")
 const uploadRoutes = require("./routes/uploadRoutes")
 const publicRoutes = require("./routes/publicRoutes")
+const locationRoutes = require("./routes/locationRoutes")
+const webPageRoutes = require("./routes/webPageRoutes")
 
 dotenv.config({
   path: path.resolve(process.cwd(), ".env")
@@ -33,6 +35,8 @@ app.use("/dashboard", dashboardRoutes)
 app.use("/categories", categoryRoutes)
 app.use("/upload", uploadRoutes)
 app.use("/public", publicRoutes)
+app.use("/locations", locationRoutes)
+app.use("/web-pages", webPageRoutes)
 
 app.use((err, req, res, next) => {
   const status = err.status || 500

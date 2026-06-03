@@ -9,6 +9,7 @@ const Role = require("../models/Role")
 const Permission = require("../models/Permission")
 const RolePermission = require("../models/RolePermission")
 const Category = require("../models/Category")
+const Location = require("../models/Location")
 
 const router = express.Router()
 
@@ -377,6 +378,53 @@ router.post("/categories", upload.single("file"), async (req, res, next) => {
     res.json({
       imported: insertedCategories.length,
       updatedParents: updatedCount
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// POST /import/locations - Import locations from CSV
+router.post("/locations", upload.single("file"), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: "CSV file is required" })
+      return
+    }
+
+    const rows = parseCsvBuffer(req.file.buffer)
+    let importedCount = 0
+    let updatedCount = 0
+
+    for (const row of rows) {
+      const name = row.name ? row.name.trim() : null
+      if (!name) continue
+
+      // Normalize type or fallback to default 'city'
+      let type = row.type ? row.type.toLowerCase().trim() : "city"
+      if (!["country", "state", "city", "area"].includes(type)) {
+        type = "city"
+      }
+
+      // Check if location exists (case-insensitive name check)
+      const existing = await Location.findOne({ name: new RegExp(`^${name}$`, "i") })
+
+      if (existing) {
+        existing.type = type
+        await existing.save()
+        updatedCount++
+      } else {
+        const location = new Location({ name, type })
+        await location.save()
+        importedCount++
+      }
+    }
+
+    res.json({
+      message: "Locations import complete",
+      imported: importedCount,
+      updated: updatedCount,
+      total: importedCount + updatedCount
     })
   } catch (error) {
     next(error)
