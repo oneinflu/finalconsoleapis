@@ -209,6 +209,24 @@ router.post("/update-content", async (req, res, next) => {
   }
 })
 
+// GET /web-pages/:id
+router.get("/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const page = await WebPage.findById(id)
+      .populate("categoryId", "name")
+      .populate("locationId", "name")
+    
+    if (!page) {
+      return res.status(404).json({ error: "Web page not found" })
+    }
+    
+    res.json(page)
+  } catch (error) {
+    next(error)
+  }
+})
+
 // DELETE /web-pages/:id
 router.delete("/:id", async (req, res, next) => {
   try {
