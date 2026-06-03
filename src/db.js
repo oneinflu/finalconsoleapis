@@ -5,6 +5,15 @@ const connectToDatabase = async () => {
   await mongoose.connect(uri, {
     autoIndex: true
   })
+  
+  // Clean up stale indexes if they exist
+  try {
+    const db = mongoose.connection.db
+    await db.collection("locations").dropIndex("normalizedName_1")
+    process.stdout.write("Stale index normalizedName_1 dropped successfully\n")
+  } catch (err) {
+    // Ignore if index doesn't exist
+  }
 }
 
 module.exports = {
