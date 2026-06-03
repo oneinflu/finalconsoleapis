@@ -1,6 +1,7 @@
 const express = require("express")
 const Blog = require("../models/Blog")
 const WebPage = require("../models/WebPage")
+const Location = require("../models/Location")
 
 const router = express.Router()
 
@@ -73,6 +74,86 @@ router.get("/seo-page/:slug", async (req, res, next) => {
     }
 
     res.json(page)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /public/seo-pages - Fetch all generated landing pages for public links/sitemap
+router.get("/seo-pages", async (req, res, next) => {
+  try {
+    const pages = await WebPage.find({ status: "generated" })
+      .populate("categoryId", "name")
+      .populate("locationId", "name")
+      .select("slug title categoryId locationId createdAt")
+      .lean()
+    res.json(pages)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /public/locations/countries - Fetch only countries
+router.get("/locations/countries", async (req, res, next) => {
+  try {
+    const locations = await Location.find({ type: "country" }).sort({ name: 1 }).lean()
+    res.json(locations)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /public/locations/states - Fetch states (optionally filter by country parentId)
+router.get("/locations/states", async (req, res, next) => {
+  try {
+    const { parentId } = req.query
+    const query = { type: "state" }
+    if (parentId) query.parentId = parentId
+    const locations = await Location.find(query).sort({ name: 1 }).lean()
+    res.json(locations)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /public/locations/cities - Fetch cities (optionally filter by state parentId)
+router.get("/locations/cities", async (req, res, next) => {
+  try {
+    const { parentId } = req.query
+    const query = { type: "city" }
+    if (parentId) query.parentId = parentId
+    const locations = await Location.find(query).sort({ name: 1 }).lean()
+    res.json(locations)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /public/locations/areas - Fetch areas (optionally filter by city parentId)
+router.get("/locations/areas", async (req, res, next) => {
+  try {
+    const { parentId } = req.query
+    const query = { type: "area" }
+    if (parentId) query.parentId = parentId
+    const locations = await Location.find(query).sort({ name: 1 }).lean()
+    res.json(locations)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// GET /public/locations - General locations search (supports type and parentId filters)
+router.get("/locations", async (req, res, next) => {
+  try {
+    const { type, parentId } = req.query
+    const query = {}
+    if (type) query.type = type
+    if (parentId) query.parentId = parentId
+    const locations = await Location.find(query)
+      .populate("parentId", "name type")
+      .sort({ name: 1 })
+      .lean()
+    res.json(locations)
   } catch (error) {
     next(error)
   }

@@ -6,7 +6,11 @@ const router = express.Router()
 // GET /locations
 router.get("/", async (req, res, next) => {
   try {
-    const locations = await Location.find({}).sort({ createdAt: -1 })
+    const { type, parentId } = req.query
+    const query = {}
+    if (type) query.type = type
+    if (parentId) query.parentId = parentId
+    const locations = await Location.find(query).populate("parentId", "name type").sort({ createdAt: -1 })
     res.json(locations)
   } catch (error) {
     next(error)
@@ -26,11 +30,11 @@ router.post("/", async (req, res, next) => {
       const locations = await Location.insertMany(filtered)
       return res.status(201).json(locations)
     } else {
-      const { name, type } = data
+      const { name, type, parentId } = data
       if (!name || name.trim() === "") {
         return res.status(400).json({ error: "Name is required" })
       }
-      const location = new Location({ name, type })
+      const location = new Location({ name, type, parentId: parentId || null })
       await location.save()
       return res.status(201).json(location)
     }
@@ -43,7 +47,7 @@ router.post("/", async (req, res, next) => {
 router.put("/:id", async (req, res, next) => {
   try {
     const { id } = req.params
-    const { name, type } = req.body
+    const { name, type, parentId } = req.body
     
     if (!name || name.trim() === "") {
       return res.status(400).json({ error: "Name is required" })
@@ -51,7 +55,7 @@ router.put("/:id", async (req, res, next) => {
 
     const location = await Location.findByIdAndUpdate(
       id,
-      { name, type },
+      { name, type, parentId: parentId || null },
       { new: true, runValidators: true }
     )
 

@@ -301,7 +301,54 @@ This document details the final endpoints, required request payloads, and respon
     }
     ```
 
-#### 2. Import Locations from CSV
+#### 2. Get All Public Landing Page Links
+*   **Endpoint**: `GET /public/seo-pages`
+*   **Description**: Retrieves a list of all generated landing pages, including their slugs, titles, and category/location mappings for links/sitemaps.
+*   **Payload**: None
+*   **Response**:
+    ```json
+    [
+      {
+        "_id": "647f2a1b9c3b2f12a4b8cb02",
+        "categoryId": {
+          "_id": "647f2a1b9c3b2f12a4b8c9d0",
+          "name": "CPA"
+        },
+        "locationId": {
+          "_id": "647f2a1b9c3b2f12a4b8c9d1",
+          "name": "Hyderabad"
+        },
+        "title": "Best CPA course near me",
+        "slug": "cpa-in-hyderabad",
+        "createdAt": "2026-06-03T07:50:00.000Z"
+      }
+    ]
+    ```
+
+#### 3. Public Locations Queries (Hierarchical & Filtered)
+*   **Endpoints**:
+    *   **Countries**: `GET /public/locations/countries`
+    *   **States**: `GET /public/locations/states` (supports optional `?parentId=countryId` query param)
+    *   **Cities**: `GET /public/locations/cities` (supports optional `?parentId=stateId` query param)
+    *   **Areas**: `GET /public/locations/areas` (supports optional `?parentId=cityId` query param)
+    *   **General Query**: `GET /public/locations` (supports optional `?type=country|state|city|area` & `?parentId=parentLocationId` query params)
+*   **Description**: Open endpoints to fetch filtered lists of locations by type and parent association to allow dynamic cascade selections (e.g. choosing a Country pulls only its States, and so on).
+*   **Response**:
+    ```json
+    [
+      {
+        "_id": "647f2a1b9c3b2f12a4b8cb99",
+        "name": "Telangana",
+        "type": "state",
+        "parentId": "647f2a1b9c3b2f12a4b8cb98",
+        "createdAt": "2026-06-03T09:00:00.000Z",
+        "updatedAt": "2026-06-03T09:00:00.000Z"
+      }
+    ]
+    ```
+
+
+#### 3. Import Locations from CSV
 *   **Endpoint**: `POST /import/locations`
 *   **Description**: Import/merge locations from a CSV file. If a location name exists (case-insensitive check), its `type` is updated, otherwise a new record is created.
 *   **Payload**: Multipart Form Data with file field `file`
