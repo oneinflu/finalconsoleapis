@@ -113,7 +113,7 @@ router.post("/generate", async (req, res, next) => {
 
     for (const location of locations) {
       const locationSlug = slugify(location.name)
-      const pageSlug = `${categorySlug}-in-${locationSlug}`
+      const pageSlug = `best-${categorySlug}-coaching-in-${locationSlug}`
 
       // Check if already exists
       const existing = await WebPage.findOne({ slug: pageSlug })

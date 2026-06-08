@@ -283,13 +283,9 @@ router.get("/sitemap-data", async (req, res, next) => {
       .lean()
 
     const sitemapData = pages.map(page => {
-      const course = page.categoryId?.name || ""
-      const courseSlug = page.categoryId?.slug || slugify(course)
-      const locationSlug = page.locationId ? slugify(page.locationId.name) : ""
-      
       return {
         slug: page.slug,
-        url: `https://northstaracad.com/best-${courseSlug}-coaching-in-${locationSlug}`,
+        url: `https://northstaracad.com/${page.slug}`,
         createdAt: page.createdAt,
         updatedAt: page.updatedAt,
         priority: 0.8,
