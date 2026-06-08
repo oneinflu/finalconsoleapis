@@ -2,6 +2,7 @@ const express = require("express")
 const WebPage = require("../models/WebPage")
 const Category = require("../models/Category")
 const Location = require("../models/Location")
+const schemaTemplate = require("../northstar-cpa-bengaluru-schema.json")
 const router = express.Router()
 
 // Slugify helper
@@ -213,180 +214,57 @@ const generateSchema = (page) => {
   const course = page.categoryId?.name || ""
   const location = page.locationId?.name || ""
   const courseSlug = page.categoryId?.slug || slugify(course)
-  const locationSlug = page.locationId ? slugify(page.locationId.name) : ""
+  const pageUrl = `https://northstaracad.com/${page.slug}`
+  const excerpt = page.excerpt || `Join NorthStar Academy for the best ${course} coaching in ${location}. Expert faculty, structured batches, and proven results.`
 
-  const replacePlaceholders = (val) => {
-    if (typeof val === "string") {
-      return val
-        .replace(/\[course\]/gi, course)
-        .replace(/\[location\]/gi, location)
-        .replace(/\[course-slug\]/gi, courseSlug)
-        .replace(/\[location-slug\]/gi, locationSlug)
-    } else if (Array.isArray(val)) {
-      return val.map(replacePlaceholders)
-    } else if (typeof val === "object" && val !== null) {
-      const obj = {}
-      for (const key in val) {
-        obj[key] = replacePlaceholders(val[key])
-      }
-      return obj
+  // Deep clone the JSON file so we never mutate the original
+  const schema = JSON.parse(JSON.stringify(schemaTemplate))
+
+  // [0] EducationalOrganization — fully static, no changes
+
+  // [1] Course — dynamic fields
+  schema[1]["@id"] = `${pageUrl}#course`
+  schema[1].name = `Best ${course} Coaching in ${location}`
+  schema[1].alternateName = `${course} Course ${location}`
+  schema[1].description = excerpt
+  schema[1].url = pageUrl
+  schema[1].educationalCredentialAwarded = course
+  schema[1].occupationalCredentialAwarded = course
+  schema[1].teaches = page.sections && page.sections.length > 0
+    ? page.sections.map(s => s.title).filter(Boolean)
+    : schema[1].teaches
+  schema[1].offers.url = pageUrl
+
+  // [2] Person — fully static, no changes
+
+  // [3] LocalBusiness — dynamic fields
+  schema[3].name = `NorthStar Academy — ${course} Coaching ${location}`
+  schema[3].description = excerpt
+  schema[3].url = pageUrl
+
+  // [4] WebPage — dynamic fields
+  schema[4]["@id"] = `${pageUrl}#webpage`
+  schema[4].url = pageUrl
+  schema[4].name = `Best ${course} Coaching in ${location} | NorthStar Academy`
+  schema[4].description = excerpt
+  schema[4].about["@id"] = `${pageUrl}#course`
+  schema[4].mainEntity["@id"] = `${pageUrl}#course`
+  schema[4].breadcrumb.itemListElement[1].name = `${course} Course`
+  schema[4].breadcrumb.itemListElement[1].item = `https://northstaracad.com/${courseSlug}-course-details`
+  schema[4].breadcrumb.itemListElement[2].name = `Best ${course} Coaching in ${location}`
+  schema[4].breadcrumb.itemListElement[2].item = pageUrl
+
+  // [5] FAQPage — use actual FAQs from DB
+  schema[5].mainEntity = (page.faqs || []).map(faq => ({
+    "@type": "Question",
+    "name": faq.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.answer
     }
-    return val
-  }
+  }))
 
-  const schemaTemplate = [
-    {
-      "@context": "https://schema.org",
-      "@type": "EducationalOrganization",
-      "name": "NorthStar Academy",
-      "url": "https://northstaracad.com",
-      "logo": "https://northstaracad.com/logo.png",
-      "description": "NorthStar Academy offers the best [course] coaching in [location] with expert faculty, structured batches, and proven results.",
-      "areaServed": {
-        "@type": "City",
-        "name": "[location]"
-      },
-      "hasOfferCatalog": {
-        "@type": "OfferCatalog",
-        "name": "[course] Coaching Programs",
-        "itemListElement": [
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Course",
-              "name": "[course] Foundation Batch in [location]",
-              "description": "Foundation level [course] preparation for students in [location]",
-              "provider": {
-                "@type": "Organization",
-                "name": "NorthStar Academy"
-              }
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Course",
-              "name": "[course] Intensive Batch in [location]",
-              "description": "Intensive [course] crash course for [location] students",
-              "provider": {
-                "@type": "Organization",
-                "name": "NorthStar Academy"
-              }
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Course",
-              "name": "[course] Online Batch for [location]",
-              "description": "Live online [course] classes for students in [location]",
-              "provider": {
-                "@type": "Organization",
-                "name": "NorthStar Academy"
-              }
-            }
-          }
-        ]
-      },
-      "sameAs": [
-        "https://www.facebook.com/northstaracademy",
-        "https://www.instagram.com/northstaracademy",
-        "https://www.youtube.com/@northstaracademy"
-      ]
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Home",
-          "item": "https://northstaracad.com"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "[course] Coaching",
-          "item": "https://northstaracad.com/[course-slug]-coaching"
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": "[course] Coaching in [location]",
-          "item": "https://northstaracad.com/best-[course-slug]-coaching-in-[location-slug]"
-        }
-      ]
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Is NorthStar Academy the best [course] coaching in [location]?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "NorthStar Academy is among the top-rated [course] coaching institutes in [location], known for expert faculty, structured batches, and consistent results. Students from [location] have achieved top ranks in [course] through our proven methodology."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What [course] batches are available in [location]?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "NorthStar Academy offers Foundation, Intensive, Repeater, and Online batches for [course] in [location]. Each batch is designed to suit different preparation stages and schedules for [location] students."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How do I enrol for [course] coaching in [location]?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "You can enrol for [course] coaching in [location] by visiting our website, calling our [location] centre, or filling the enquiry form. Our counsellors will help you choose the right [course] batch based on your current preparation level."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Does NorthStar Academy offer online [course] classes for [location] students?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. NorthStar Academy offers live online [course] classes that [location] students can attend from home. The online batch covers the full [course] syllabus with the same faculty and test series as the offline batches."
-          }
-        }
-      ]
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      "name": "Best [course] Coaching in [location] | NorthStar Academy",
-      "description": "Join NorthStar Academy for the best [course] coaching in [location]. Expert faculty, structured batches, and proven results.",
-      "url": "https://northstaracad.com/best-[course-slug]-coaching-in-[location-slug]",
-      "breadcrumb": {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://northstaracad.com"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "[course] Coaching in [location]",
-            "item": "https://northstaracad.com/best-[course-slug]-coaching-in-[location-slug]"
-          }
-        ]
-      },
-      "speakable": {
-        "@type": "SpeakableSpecification",
-        "cssSelector": ["h1", "h2", ".page-intro"]
-      }
-    }
-  ]
-
-  return replacePlaceholders(schemaTemplate)
+  return schema
 }
 
 // GET /web-pages/:id
